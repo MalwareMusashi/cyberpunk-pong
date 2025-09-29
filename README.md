@@ -91,9 +91,6 @@ Add game modes (multiple balls, obstacles, etc.)
 Implement a pause/resume feature
 Add difficulty settings
 
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
 🙏 Credits
 Original Pong Wars concept by Nicolas Daniel
 Original implementation by Koen van Gilst
