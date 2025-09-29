@@ -1,5 +1,5 @@
-# cyberpunk-pong
-🎮 Cyberpunk Pong Wars
+# cyberpunk-pong 🎮 
+Cyberpunk Pong Wars
 A neon-soaked reimagining of the classic Pong Wars game with a cyberpunk aesthetic. Watch as two balls battle for territory in an eternal struggle between NEON and SHADOW forces, complete with glowing trails and atmospheric effects.
 Show Image
 Show Image
