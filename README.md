@@ -68,8 +68,11 @@ Responsive Design: Adapts to different screen sizes
 cyberpunk-pong/
 │
 ├── index.html          # Complete game (HTML, CSS, and JavaScript)
+
 ├── README.md          # Documentation
+
 └── LICENSE            # License file
+
 🤝 Contributing
 Contributions are welcome! Feel free to:
 
