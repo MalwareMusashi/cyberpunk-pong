@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cyberpunk Pong Wars</title>
+    <meta
+      name="description"
+      content="The eternal battle between neon and shadow in a cyberpunk world. Written in JavaScript with some HTML & CSS in one index.html."
+    />
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+      
+      html {
+        height: 100%;
+      }
+
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a0b2e 50%, #16213e 100%);
+        overflow: hidden;
+        position: relative;
+      }
+
+      body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+          repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 0, 255, 0.03) 2px,
+            rgba(255, 0, 255, 0.03) 4px
+          );
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      #container {
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+        width: min(70vh, 80%);
+        max-width: 600px;
+        height: 100%;
+        z-index: 2;
+        position: relative;
+      }
+
+      canvas {
+        display: block;
+        border-radius: 4px;
+        overflow: hidden;
+        width: 100%;
+        margin-top: auto;
+        box-shadow: 
+          0 0 40px rgba(255, 0, 255, 0.5),
+          0 0 80px rgba(0, 255, 255, 0.3),
+          inset 0 0 20px rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 0, 255, 0.3);
+        position: relative;
+      }
+
+      #score {
+        font-family: 'Orbitron', monospace;
+        margin-top: 30px;
+        font-size: 18px;
+        font-weight: 700;
+        padding-left: 20px;
+        color: #00ffff;
+        text-shadow: 
+          0 0 10px rgba(0, 255, 255, 0.8),
+          0 0 20px rgba(0, 255, 255, 0.5),
+          0 0 30px rgba(0, 255, 255, 0.3);
+        letter-spacing: 2px;
+        text-transform: uppercase;
+      }
+
+      #score .neon {
+        color: #ff00ff;
+        text-shadow: 
+          0 0 10px rgba(255, 0, 255, 0.8),
+          0 0 20px rgba(255, 0, 255, 0.5),
+          0 0 30px rgba(255, 0, 255, 0.3);
+      }
+
+      #score .shadow {
+        color: #00ffff;
+        text-shadow: 
+          0 0 10px rgba(0, 255, 255, 0.8),
+          0 0 20px rgba(0, 255, 255, 0.5),
+          0 0 30px rgba(0, 255, 255, 0.3);
+      }
+
+      #made {
+        text-align: center;
+        line-height: 1.5;
+        font-family: 'Orbitron', monospace;
+        margin-top: auto;
+        margin-bottom: 20px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #ff00ff;
+        opacity: 0.7;
+      }
+
+      #made a {
+        color: #00ffff;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+
+      #made a:hover {
+        color: #ff00ff;
+        text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+      }
+
+      @keyframes glitch {
+        0% {
+          transform: translate(0);
+        }
+        20% {
+          transform: translate(-1px, 1px);
+        }
+        40% {
+          transform: translate(-1px, -1px);
+        }
+        60% {
+          transform: translate(1px, 1px);
+        }
+        80% {
+          transform: translate(1px, -1px);
+        }
+        100% {
+          transform: translate(0);
+        }
+      }
+
+      .glitch {
+        animation: glitch 0.3s infinite;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="container">
+      <canvas id="pongCanvas" width="600" height="600"></canvas>
+      <div id="score"></div>
+      <p id="made">
+        made by
+        <a href="https://koenvangilst.nl/labs/pong-wars">M4lw4r3Mus4shi</a> | source on
+        <a href="https://github.com/vnglst/pong-wars">github</a>
+      </p>
+    </div>
+  </body>
+
+  <script>
+    // Cyberpunk color palette
+    const colorPalette = {
+      NeonPink: "#ff00ff",
+      ElectricCyan: "#00ffff",
+      DeepPurple: "#7209b7",
+      DarkVoid: "#0a0a0a",
+      NeonGreen: "#39ff14",
+      HotMagenta: "#ff006e",
+      CyberBlue: "#00d4ff",
+      ShadowPurple: "#2d1b69"
+    };
+
+    const canvas = document.getElementById("pongCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreElement = document.getElementById("score");
+
+    // Cyberpunk theme colors
+    const DAY_COLOR = colorPalette.ShadowPurple;
+    const DAY_BALL_COLOR = colorPalette.ElectricCyan;
+    const NIGHT_COLOR = colorPalette.DarkVoid;
+    const NIGHT_BALL_COLOR = colorPalette.NeonPink;
+    const SQUARE_SIZE = 25;
+    const MIN_SPEED = 5;
+    const MAX_SPEED = 10;
+    const TRAIL_LENGTH = 20;
+
+    const numSquaresX = canvas.width / SQUARE_SIZE;
+    const numSquaresY = canvas.height / SQUARE_SIZE;
+
+    let dayScore = 0;
+    let nightScore = 0;
+
+    const squares = [];
+
+    // Trail data structure
+    const trails = {
+      ball1: [],
+      ball2: []
+    };
+
+    // Populate the fields, one half day, one half night
+    for (let i = 0; i < numSquaresX; i++) {
+      squares[i] = [];
+      for (let j = 0; j < numSquaresY; j++) {
+        squares[i][j] = i < numSquaresX / 2 ? DAY_COLOR : NIGHT_COLOR;
+      }
+    }
+
+    const balls = [
+      {
+        x: canvas.width / 4,
+        y: canvas.height / 2,
+        dx: 8,
+        dy: -8,
+        reverseColor: DAY_COLOR,
+        ballColor: DAY_BALL_COLOR,
+        trailKey: 'ball1',
+        glowColor: colorPalette.ElectricCyan
+      },
+      {
+        x: (canvas.width / 4) * 3,
+        y: canvas.height / 2,
+        dx: -8,
+        dy: 8,
+        reverseColor: NIGHT_COLOR,
+        ballColor: NIGHT_BALL_COLOR,
+        trailKey: 'ball2',
+        glowColor: colorPalette.NeonPink
+      },
+    ];
+
+    let iteration = 0;
+
+    function updateTrail(ball) {
+      const trail = trails[ball.trailKey];
+      trail.push({ x: ball.x, y: ball.y });
+      if (trail.length > TRAIL_LENGTH) {
+        trail.shift();
+      }
+    }
+
+    function drawTrail(ball) {
+      const trail = trails[ball.trailKey];
+      trail.forEach((point, index) => {
+        const opacity = (index / trail.length) * 0.6;
+        const radius = (SQUARE_SIZE / 2) * (index / trail.length) * 0.8;
+        
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2, false);
+        
+        // Create gradient for trail
+        const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
+        gradient.addColorStop(0, ball.ballColor + Math.floor(opacity * 255).toString(16).padStart(2, '0'));
+        gradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.closePath();
+      });
+    }
+
+    function drawBall(ball) {
+      // Draw trail first (so it appears behind the ball)
+      drawTrail(ball);
+      
+      // Draw outer glow
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, SQUARE_SIZE / 2 + 5, 0, Math.PI * 2, false);
+      const glowGradient = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, SQUARE_SIZE / 2 + 5);
+      glowGradient.addColorStop(0, ball.glowColor + '40');
+      glowGradient.addColorStop(0.5, ball.glowColor + '20');
+      glowGradient.addColorStop(1, 'transparent');
+      ctx.fillStyle = glowGradient;
+      ctx.fill();
+      ctx.closePath();
+      
+      // Draw main ball
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, SQUARE_SIZE / 2, 0, Math.PI * 2, false);
+      
+      // Create gradient for ball
+      const gradient = ctx.createRadialGradient(ball.x - 3, ball.y - 3, 0, ball.x, ball.y, SQUARE_SIZE / 2);
+      gradient.addColorStop(0, ball.ballColor);
+      gradient.addColorStop(0.7, ball.ballColor);
+      gradient.addColorStop(1, ball.glowColor);
+      
+      ctx.fillStyle = gradient;
+      ctx.fill();
+      
+      // Add inner glow
+      ctx.shadowColor = ball.glowColor;
+      ctx.shadowBlur = 20;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      ctx.closePath();
+    }
+
+    function drawSquares() {
+      dayScore = 0;
+      nightScore = 0;
+
+      for (let i = 0; i < numSquaresX; i++) {
+        for (let j = 0; j < numSquaresY; j++) {
+          ctx.fillStyle = squares[i][j];
+          ctx.fillRect(i * SQUARE_SIZE, j * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+          
+          // Add subtle grid lines for cyberpunk effect
+          ctx.strokeStyle = squares[i][j] === DAY_COLOR ? 'rgba(0, 255, 255, 0.1)' : 'rgba(255, 0, 255, 0.1)';
+          ctx.lineWidth = 0.5;
+          ctx.strokeRect(i * SQUARE_SIZE, j * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+
+          // Update scores
+          if (squares[i][j] === DAY_COLOR) dayScore++;
+          if (squares[i][j] === NIGHT_COLOR) nightScore++;
+        }
+      }
+    }
+
+    function checkSquareCollision(ball) {
+      // Check multiple points around the ball's circumference
+      for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+        const checkX = ball.x + Math.cos(angle) * (SQUARE_SIZE / 2);
+        const checkY = ball.y + Math.sin(angle) * (SQUARE_SIZE / 2);
+
+        const i = Math.floor(checkX / SQUARE_SIZE);
+        const j = Math.floor(checkY / SQUARE_SIZE);
+
+        if (i >= 0 && i < numSquaresX && j >= 0 && j < numSquaresY) {
+          if (squares[i][j] !== ball.reverseColor) {
+            // Square hit! Update square color
+            squares[i][j] = ball.reverseColor;
+
+            // Create impact effect
+            ctx.fillStyle = ball.glowColor;
+            ctx.globalAlpha = 0.5;
+            ctx.fillRect(i * SQUARE_SIZE - 2, j * SQUARE_SIZE - 2, SQUARE_SIZE + 4, SQUARE_SIZE + 4);
+            ctx.globalAlpha = 1;
+
+            // Determine bounce direction based on the angle
+            if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
+              ball.dx = -ball.dx;
+            } else {
+              ball.dy = -ball.dy;
+            }
+          }
+        }
+      }
+    }
+
+    function checkBoundaryCollision(ball) {
+      if (ball.x + ball.dx > canvas.width - SQUARE_SIZE / 2 || ball.x + ball.dx < SQUARE_SIZE / 2) {
+        ball.dx = -ball.dx;
+      }
+      if (ball.y + ball.dy > canvas.height - SQUARE_SIZE / 2 || ball.y + ball.dy < SQUARE_SIZE / 2) {
+        ball.dy = -ball.dy;
+      }
+    }
+
+    function addRandomness(ball) {
+      ball.dx += Math.random() * 0.02 - 0.01;
+      ball.dy += Math.random() * 0.02 - 0.01;
+
+      // Limit the speed of the ball
+      ball.dx = Math.min(Math.max(ball.dx, -MAX_SPEED), MAX_SPEED);
+      ball.dy = Math.min(Math.max(ball.dy, -MAX_SPEED), MAX_SPEED);
+
+      // Make sure the ball always maintains a minimum speed
+      if (Math.abs(ball.dx) < MIN_SPEED) ball.dx = ball.dx > 0 ? MIN_SPEED : -MIN_SPEED;
+      if (Math.abs(ball.dy) < MIN_SPEED) ball.dy = ball.dy > 0 ? MIN_SPEED : -MIN_SPEED;
+    }
+
+    function draw() {
+      // Create slight motion blur effect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      drawSquares();
+
+      scoreElement.innerHTML = `<span class="neon">NEON ${dayScore}</span> | <span class="shadow">SHADOW ${nightScore}</span>`;
+
+      balls.forEach((ball) => {
+        updateTrail(ball);
+        drawBall(ball);
+        checkSquareCollision(ball);
+        checkBoundaryCollision(ball);
+        ball.x += ball.dx;
+        ball.y += ball.dy;
+
+        addRandomness(ball);
+      });
+
+      iteration++;
+      if (iteration % 1_000 === 0) console.log("iteration", iteration);
+    }
+
+    const FRAME_RATE = 60;
+    setInterval(draw, 1000 / FRAME_RATE);
+  </script>
+</html>
