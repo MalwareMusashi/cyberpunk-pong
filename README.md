@@ -55,11 +55,6 @@ javascriptconst colorPalette = {
 
 Adjustable Parameters:
 
-SQUARE_SIZE: Size of each territory square (default: 25)
-MIN_SPEED / MAX_SPEED: Ball velocity limits (default: 5-10)
-TRAIL_LENGTH: Number of trail segments (default: 20)
-FRAME_RATE: Animation FPS (default: 60)
-
 🔧 Technical Details
 Pure JavaScript: No frameworks or libraries required
 HTML5 Canvas: Hardware-accelerated rendering
