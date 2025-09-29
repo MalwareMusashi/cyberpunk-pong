@@ -42,6 +42,7 @@ cd cyberpunk-pong-wars
 Then open index.html in your browser.
 Option 3: GitHub Pages
 Fork this repository and enable GitHub Pages in the settings to host your own version.
+
 🎨 Customization
 You can easily customize the game by modifying the color palette in the JavaScript section:
 javascriptconst colorPalette = {
