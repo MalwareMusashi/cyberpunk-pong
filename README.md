@@ -66,7 +66,9 @@ Responsive Design: Adapts to different screen sizes
 
 📦 File Structure
 cyberpunk-pong/
+
 │
+
 ├── index.html          # Complete game (HTML, CSS, and JavaScript)
 
 ├── README.md          # Documentation
