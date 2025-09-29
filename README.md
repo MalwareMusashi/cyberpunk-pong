@@ -20,7 +20,8 @@ Smooth 60 FPS Animation: Optimized for fluid gameplay
 Fully Self-Contained: Single HTML file with no external dependencies (except Google Fonts)
 
 🚀 Demo
-Live Demo - Add your GitHub Pages or hosting link here
+Live Demo - https://github.com/MalwareMusashi/cyberpunk-pong
+
 🎯 How It Works
 Two balls bounce around the playing field, each representing a different faction:
 
@@ -36,7 +37,7 @@ Open it in any modern web browser
 Enjoy the game!
 
 Option 2: Clone Repository
-bashgit clone https://github.com/yourusername/cyberpunk-pong-wars.git
+bashgit clone (https://github.com/MalwareMusashi/cyberpunk-pong)
 cd cyberpunk-pong-wars
 Then open index.html in your browser.
 Option 3: GitHub Pages
@@ -58,7 +59,6 @@ TRAIL_LENGTH: Number of trail segments (default: 20)
 FRAME_RATE: Animation FPS (default: 60)
 
 🔧 Technical Details
-
 Pure JavaScript: No frameworks or libraries required
 HTML5 Canvas: Hardware-accelerated rendering
 CSS3 Effects: Gradients, shadows, and animations
@@ -82,7 +82,6 @@ Submit pull requests
 Create your own themed versions
 
 Ideas for Contributions:
-
 Add sound effects and background music
 Implement power-ups or special abilities
 Create different visual themes
@@ -92,17 +91,17 @@ Add difficulty settings
 
 📄 License
 This project is licensed under the MIT License - see the LICENSE file for details.
-🙏 Credits
 
+🙏 Credits
 Original Pong Wars concept by Nicolas Daniel
 Original implementation by Koen van Gilst
-Cyberpunk redesign and trail effects by [Your Name]
+Cyberpunk redesign and trail effects by m4lw4r3Mus4shi
 Color palette inspiration from cyberpunk aesthetic and synthwave art
 
 🎮 Controls
 No controls needed! Sit back and watch the eternal battle unfold. The game runs automatically.
-🐛 Known Issues
 
+🐛 Known Issues
 Performance may vary on older devices
 Trail effects might cause slight performance impact on very low-end systems
 
@@ -120,12 +119,8 @@ Opera 76+ ✅
  Implement particle effects on collision
  Add game statistics and history
  Create multiplayer mode
- Add AI difficulty levels
  Implement save states
  Add more visual themes
-
-📸 Screenshots
-Add screenshots of your game here
 
 Made with 💜 and ⚡ in the spirit of cyberpunk aesthetics
 Play Now! | Report Issue | Star on GitHub
