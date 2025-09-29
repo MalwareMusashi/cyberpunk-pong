@@ -52,6 +52,7 @@ javascriptconst colorPalette = {
   DarkVoid: "#0a0a0a",
   // Add your own colors here
 };
+
 Adjustable Parameters:
 
 SQUARE_SIZE: Size of each territory square (default: 25)
@@ -75,8 +76,9 @@ cyberpunk-pong/
 └── README.md          # Documentation
 
 🤝 Contributing
-Contributions are welcome! Feel free to:
+Contributions are welcome! 
 
+Feel free to:
 Report bugs
 Suggest new features
 Submit pull requests
