@@ -72,9 +72,7 @@ cyberpunk-pong/
 
 ├── index.html          # Complete game (HTML, CSS, and JavaScript)
 
-├── README.md          # Documentation
-
-└── LICENSE            # License file
+└── README.md          # Documentation
 
 🤝 Contributing
 Contributions are welcome! Feel free to:
