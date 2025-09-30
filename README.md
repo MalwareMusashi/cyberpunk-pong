@@ -14,7 +14,7 @@ Smooth 60 FPS Animation: Optimized for fluid gameplay
 Fully Self-Contained: Single HTML file with no external dependencies (except Google Fonts)
 
 🚀 Demo
-Live Demo - Coming soon!!!
+Live Demo - https://malwaremusashi.github.io/cyberpunk-pong-wars/
 
 🎯 How It Works
 Two balls bounce around the playing field, each representing a different faction:
