@@ -205,6 +205,123 @@
       ball2: []
     };
 
+    // Particle system
+    const particles = [];
+    const MAX_PARTICLES = 200;
+
+    class Particle {
+      constructor(x, y, color, type = 'square') {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.type = type;
+        
+        if (type === 'ball') {
+          // Ball collision particles - explosive burst
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 8 + 4;
+          this.vx = Math.cos(angle) * speed;
+          this.vy = Math.sin(angle) * speed;
+          this.size = Math.random() * 6 + 3;
+          this.life = 1;
+          this.decay = 0.015;
+          this.gravity = 0;
+          this.trail = [];
+        } else {
+          // Square collision particles - directional spray
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 4 + 2;
+          this.vx = Math.cos(angle) * speed;
+          this.vy = Math.sin(angle) * speed;
+          this.size = Math.random() * 4 + 2;
+          this.life = 1;
+          this.decay = 0.02;
+          this.gravity = 0.1;
+          this.trail = [];
+        }
+      }
+
+      update() {
+        // Store trail position
+        if (this.life > 0.5) {
+          this.trail.push({ x: this.x, y: this.y, life: this.life });
+          if (this.trail.length > 5) {
+            this.trail.shift();
+          }
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+        this.life -= this.decay;
+        
+        // Add sparkle effect for ball collision particles
+        if (this.type === 'ball' && Math.random() < 0.1) {
+          this.size = Math.random() * 6 + 3;
+        }
+      }
+
+      draw(ctx) {
+        if (this.life <= 0) return;
+
+        // Draw particle trail
+        this.trail.forEach((point, index) => {
+          const trailOpacity = (index / this.trail.length) * this.life * 0.3;
+          ctx.globalAlpha = trailOpacity;
+          ctx.fillStyle = this.color;
+          ctx.fillRect(point.x - 1, point.y - 1, 2, 2);
+        });
+
+        // Draw main particle with glow
+        ctx.globalAlpha = this.life;
+        
+        // Outer glow
+        const glowSize = this.size * 2;
+        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, glowSize);
+        gradient.addColorStop(0, this.color);
+        gradient.addColorStop(0.4, this.color + '80');
+        gradient.addColorStop(1, 'transparent');
+        
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, glowSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Inner bright core
+        ctx.fillStyle = this.type === 'ball' ? '#ffffff' : this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    function createParticles(x, y, color, count, type = 'square') {
+      for (let i = 0; i < count; i++) {
+        if (particles.length < MAX_PARTICLES) {
+          particles.push(new Particle(x, y, color, type));
+        }
+      }
+    }
+
+    function updateParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const particle = particles[i];
+        particle.update();
+        
+        if (particle.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    function drawParticles(ctx) {
+      particles.forEach(particle => particle.draw(ctx));
+    }
+
     // Populate the fields, one half day, one half night
     for (let i = 0; i < numSquaresX; i++) {
       squares[i] = [];
@@ -338,6 +455,11 @@
             // Square hit! Update square color
             squares[i][j] = ball.reverseColor;
 
+            // Create particle explosion at impact point
+            const impactX = i * SQUARE_SIZE + SQUARE_SIZE / 2;
+            const impactY = j * SQUARE_SIZE + SQUARE_SIZE / 2;
+            createParticles(impactX, impactY, ball.glowColor, 8, 'square');
+
             // Create impact effect
             ctx.fillStyle = ball.glowColor;
             ctx.globalAlpha = 0.5;
@@ -368,6 +490,20 @@
       const minDistance = SQUARE_SIZE;
       
       if (distance < minDistance) {
+        // Create spectacular particle explosion at collision point
+        const collisionX = (ball1.x + ball2.x) / 2;
+        const collisionY = (ball1.y + ball2.y) / 2;
+        
+        // Create particles with both ball colors
+        createParticles(collisionX, collisionY, ball1.glowColor, 15, 'ball');
+        createParticles(collisionX, collisionY, ball2.glowColor, 15, 'ball');
+        
+        // Add screen shake effect for ball collisions
+        canvas.style.transform = `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`;
+        setTimeout(() => {
+          canvas.style.transform = 'translate(0, 0)';
+        }, 50);
+        
         // Normalize the collision vector
         const nx = dx / distance;
         const ny = dy / distance;
@@ -453,6 +589,10 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
       drawSquares();
+      
+      // Update and draw particles
+      updateParticles();
+      drawParticles(ctx);
 
       scoreElement.innerHTML = `<span class="neon">NEON ${dayScore}</span> | <span class="shadow">SHADOW ${nightScore}</span>`;
 
