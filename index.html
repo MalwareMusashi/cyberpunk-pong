@@ -355,6 +355,76 @@
       }
     }
 
+    function checkBallCollision() {
+      const ball1 = balls[0];
+      const ball2 = balls[1];
+      
+      // Calculate distance between ball centers
+      const dx = ball2.x - ball1.x;
+      const dy = ball2.y - ball1.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // Check if balls are colliding (both have radius of SQUARE_SIZE / 2)
+      const minDistance = SQUARE_SIZE;
+      
+      if (distance < minDistance) {
+        // Normalize the collision vector
+        const nx = dx / distance;
+        const ny = dy / distance;
+        
+        // Separate the balls to prevent overlap
+        const overlap = minDistance - distance;
+        const separationX = nx * overlap * 0.5;
+        const separationY = ny * overlap * 0.5;
+        
+        ball1.x -= separationX;
+        ball1.y -= separationY;
+        ball2.x += separationX;
+        ball2.y += separationY;
+        
+        // Calculate relative velocity
+        const dvx = ball2.dx - ball1.dx;
+        const dvy = ball2.dy - ball1.dy;
+        
+        // Calculate relative velocity in collision normal direction
+        const dvn = dvx * nx + dvy * ny;
+        
+        // Do not resolve if velocities are separating
+        if (dvn > 0) return;
+        
+        // Calculate collision impulse
+        const impulse = 2 * dvn / 2; // Divided by sum of masses (both are 1)
+        
+        // Update velocities
+        ball1.dx += impulse * nx;
+        ball1.dy += impulse * ny;
+        ball2.dx -= impulse * nx;
+        ball2.dy -= impulse * ny;
+        
+        // Add some randomness to prevent perfectly symmetric bounces
+        ball1.dx += (Math.random() - 0.5) * 0.5;
+        ball1.dy += (Math.random() - 0.5) * 0.5;
+        ball2.dx += (Math.random() - 0.5) * 0.5;
+        ball2.dy += (Math.random() - 0.5) * 0.5;
+        
+        // Ensure minimum speed is maintained
+        const speed1 = Math.sqrt(ball1.dx * ball1.dx + ball1.dy * ball1.dy);
+        const speed2 = Math.sqrt(ball2.dx * ball2.dx + ball2.dy * ball2.dy);
+        
+        if (speed1 < MIN_SPEED) {
+          const factor = MIN_SPEED / speed1;
+          ball1.dx *= factor;
+          ball1.dy *= factor;
+        }
+        
+        if (speed2 < MIN_SPEED) {
+          const factor = MIN_SPEED / speed2;
+          ball2.dx *= factor;
+          ball2.dy *= factor;
+        }
+      }
+    }
+
     function checkBoundaryCollision(ball) {
       if (ball.x + ball.dx > canvas.width - SQUARE_SIZE / 2 || ball.x + ball.dx < SQUARE_SIZE / 2) {
         ball.dx = -ball.dx;
@@ -385,6 +455,9 @@
       drawSquares();
 
       scoreElement.innerHTML = `<span class="neon">NEON ${dayScore}</span> | <span class="shadow">SHADOW ${nightScore}</span>`;
+
+      // Check for ball-to-ball collision first
+      checkBallCollision();
 
       balls.forEach((ball) => {
         updateTrail(ball);
