@@ -7,13 +7,7 @@ A neon-soaked reimagining of the classic Pong Wars game with a cyberpunk aesthet
 
 Cyberpunk Visual Design: Neon pink and electric cyan colors against dark backgrounds
 Dynamic Trail Effects: Each ball leaves a glowing trail of light as it moves
-Atmospheric Effects:
-
-Scanline CRT overlay for retro-futuristic feel
-Glowing borders and shadows
-Motion blur effects
-Impact flashes on collision
-
+Atmospheric Effects, and now we have particle effects on collision.
 
 Real-time Territory Control: Watch as the battlefield shifts between the two forces
 Smooth 60 FPS Animation: Optimized for fluid gameplay
@@ -42,16 +36,6 @@ cd cyberpunk-pong-wars
 Then open index.html in your browser.
 Option 3: GitHub Pages
 Fork this repository and enable GitHub Pages in the settings to host your own version.
-
-🎨 Customization
-You can easily customize the game by modifying the color palette in the JavaScript section:
-javascriptconst colorPalette = {
-  NeonPink: "#ff00ff",
-  ElectricCyan: "#00ffff",
-  DeepPurple: "#7209b7",
-  DarkVoid: "#0a0a0a",
-  // Add your own colors here
-};
 
 Adjustable Parameters:
 
@@ -111,7 +95,7 @@ Opera 76+ ✅
 🚀 Future Enhancements
 
  Add cyberpunk sound effects
- Implement particle effects on collision
+ Implement particle effects on collision - Done
  Add game statistics and history
  Create multiplayer mode
  Implement save states
