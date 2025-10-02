@@ -39,7 +39,7 @@ Fork this repository and enable GitHub Pages in the settings to host your own ve
 
 Adjustable Parameters:
 
-🔧 Technical Details
+Technical Details
 Pure JavaScript: No frameworks or libraries required
 HTML5 Canvas: Hardware-accelerated rendering
 CSS3 Effects: Gradients, shadows, and animations
@@ -80,7 +80,7 @@ Color palette inspiration from cyberpunk aesthetic and synthwave art
 Controls
 No controls needed! Sit back and watch the eternal battle unfold. The game runs automatically.
 
-🐛 Known Issues
+Known Issues
 Performance may vary on older devices
 Trail effects might cause slight performance impact on very low-end systems
 
