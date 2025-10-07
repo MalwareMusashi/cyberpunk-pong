@@ -26,12 +26,10 @@
         position: relative;
       }
 
-      /* hide default cursor everywhere */
       * {
         cursor: none !important;
       }
 
-      /* scanlines go brrr */
       body::before {
         content: '';
         position: absolute;
@@ -132,16 +130,6 @@
         text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
       }
 
-      @keyframes glitch {
-        0% { transform: translate(0); }
-        20% { transform: translate(-1px, 1px); }
-        40% { transform: translate(-1px, -1px); }
-        60% { transform: translate(1px, 1px); }
-        80% { transform: translate(1px, -1px); }
-        100% { transform: translate(0); }
-      }
-
-      /* custom neon cursor */
       .cursor-dot {
         position: fixed;
         top: 0;
@@ -155,7 +143,7 @@
         transform: translate(-50%, -50%);
         box-shadow: 0 0 15px rgba(0,255,127,0.6);
         transition: transform 0.08s ease-out, box-shadow 0.2s ease-out;
-        mix-blend-mode: screen; /* makes it glow better */
+        mix-blend-mode: screen;
       }
     </style>
   </head>
@@ -172,10 +160,12 @@
     </div>
 
     <script>
-      // cyberpunk pong wars - neon edition
-      // took the OG pong wars and cranked it to 11
-      // warning: contains excessive particle effects
-      
+      // detect if the game is inside an iframe
+      const inIframe = window.self !== window.top;
+    </script>
+
+    <script>
+      // main pong logic
       const colors = {
         pink: "#ff00ff",
         cyan: "#00ffff", 
@@ -191,7 +181,6 @@
       var ctx = canvas.getContext("2d");
       const scoreDiv = document.getElementById("score");
       
-      // game settings
       const TEAM1_COLOR = colors.darkpurp;
       const TEAM1_BALL = colors.cyan;
       const TEAM2_COLOR = colors.black;
@@ -206,14 +195,11 @@
 
       var team1pts = 0, team2pts = 0;
       let frameCounter = 0;
-
-      // arrays n stuff
       const grid = [];
       var ballTrails = {ball1: [], ball2: []};
       var particleArray = [];
       const PARTICLE_LIMIT = 200;
 
-      // particle object
       function Particle(x, y, color, isBallHit) {
         this.x = x;
         this.y = y;
@@ -223,7 +209,6 @@
         var angle = Math.random() * Math.PI * 2;
         
         if(this.ballHit) {
-          // big boom
           let vel = Math.random() * 8 + 4;
           this.vx = Math.cos(angle) * vel;
           this.vy = Math.sin(angle) * vel;
@@ -233,7 +218,6 @@
           this.grav = 0;
         }
         else {
-          // small poof
           let vel = Math.random() * 4 + 2;
           this.vx = Math.cos(angle) * vel;
           this.vy = Math.sin(angle) * vel;
@@ -243,11 +227,10 @@
           this.grav = 0.1;
         }
         
-        this.history = []; // trail
+        this.history = [];
       }
 
       Particle.prototype.update = function() {
-        // save old pos for trails
         if(this.alpha > 0.5) {
           this.history.push({x: this.x, y: this.y, a: this.alpha});
           if(this.history.length > 5) this.history.shift();
@@ -257,22 +240,13 @@
         this.y += this.vy;
         this.vy += this.grav;
         
-        // friction or whatever
-        this.vx = this.vx * 0.98;
-        this.vy = this.vy * 0.98;
-        
+        this.vx *= 0.98;
+        this.vy *= 0.98;
         this.alpha -= this.decay;
-        
-        // sparkle effect for ball collisions cuz why not
-        if(this.ballHit && Math.random() < 0.1) {
-          this.radius = Math.random() * 6 + 3;
-        }
       };
 
       Particle.prototype.draw = function() {
         if(this.alpha <= 0) return;
-
-        // trail
         for(var i=0; i<this.history.length; i++) {
           let p = this.history[i];
           ctx.globalAlpha = (i / this.history.length) * this.alpha * 0.3;
@@ -281,8 +255,6 @@
         }
 
         ctx.globalAlpha = this.alpha;
-        
-        // glowy stuff
         var grad = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius * 2);
         grad.addColorStop(0, this.color);
         grad.addColorStop(0.4, this.color + '80');
@@ -292,15 +264,6 @@
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius * 2, 0, Math.PI * 2);
         ctx.fill();
-        
-        // white center for ball hits
-        if(this.ballHit) {
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.radius * 0.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-        
         ctx.globalAlpha = 1;
       };
 
@@ -324,16 +287,13 @@
         particleArray.forEach(function(p) { p.draw(); });
       }
 
-      // setup grid
       for(let i = 0; i < gridW; i++) {
         grid[i] = [];
         for(let j = 0; j < gridH; j++) {
-          // half n half
           grid[i][j] = i < gridW/2 ? TEAM1_COLOR : TEAM2_COLOR;
         }
       }
 
-      // ball data
       const balls = [
         {
           x: canvas.width / 4, 
@@ -384,8 +344,6 @@
 
       function drawBall(b) {
         drawTrail(b);
-        
-        // glow
         ctx.beginPath();
         ctx.arc(b.x, b.y, SQ_SIZE/2 + 5, 0, Math.PI * 2);
         var glow = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, SQ_SIZE/2 + 5);
@@ -393,8 +351,6 @@
         glow.addColorStop(1, 'transparent');
         ctx.fillStyle = glow;
         ctx.fill();
-        
-        // ball
         ctx.beginPath();
         ctx.arc(b.x, b.y, SQ_SIZE/2, 0, Math.PI * 2);
         var g = ctx.createRadialGradient(b.x-3, b.y-3, 0, b.x, b.y, SQ_SIZE/2);
@@ -412,50 +368,8 @@
           for(let j=0; j<gridH; j++) {
             ctx.fillStyle = grid[i][j];
             ctx.fillRect(i*SQ_SIZE, j*SQ_SIZE, SQ_SIZE, SQ_SIZE);
-            
-            // grid lines cuz cyberpunk
-            ctx.strokeStyle = grid[i][j] == TEAM1_COLOR ? 'rgba(0,255,255,0.1)' : 'rgba(255,0,255,0.1)';
-            ctx.lineWidth = 0.5;
-            ctx.strokeRect(i*SQ_SIZE, j*SQ_SIZE, SQ_SIZE, SQ_SIZE);
-            
             if(grid[i][j] === TEAM1_COLOR) team1pts++;
             else if(grid[i][j] === TEAM2_COLOR) team2pts++;
-          }
-        }
-      }
-
-      function checkSquareHit(ball) {
-        // check around ball edge
-        for(let angle = 0; angle < Math.PI*2; angle += Math.PI/4) {
-          var checkX = ball.x + Math.cos(angle) * (SQ_SIZE/2);
-          var checkY = ball.y + Math.sin(angle) * (SQ_SIZE/2);
-
-          var i = Math.floor(checkX / SQ_SIZE);
-          var j = Math.floor(checkY / SQ_SIZE);
-
-          if(i >= 0 && i < gridW && j >= 0 && j < gridH) {
-            if(grid[i][j] != ball.team) {
-              // convert square
-              grid[i][j] = ball.team;
-
-              // particles!
-              let hitX = i*SQ_SIZE + SQ_SIZE/2;
-              let hitY = j*SQ_SIZE + SQ_SIZE/2;
-              makeParticles(hitX, hitY, ball.glow, 8, false);
-
-              // flash
-              ctx.fillStyle = ball.glow;
-              ctx.globalAlpha = 0.5;
-              ctx.fillRect(i*SQ_SIZE - 2, j*SQ_SIZE - 2, SQ_SIZE + 4, SQ_SIZE + 4);
-              ctx.globalAlpha = 1;
-
-              // bounce
-              if(Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
-                ball.vx = -ball.vx;
-              } else {
-                ball.vy = -ball.vy;
-              }
-            }
           }
         }
       }
@@ -469,61 +383,10 @@
         var dist = Math.sqrt(dx*dx + dy*dy);
         
         if(dist < SQ_SIZE) {
-          // COLLISION!!!
           var midX = (b1.x + b2.x) / 2;
           var midY = (b1.y + b2.y) / 2;
-          
-          // epic particles
           makeParticles(midX, midY, b1.glow, 15, true);
           makeParticles(midX, midY, b2.glow, 15, true);
-          
-          // shake it
-          canvas.style.transform = 'translate(' + (Math.random()*4-2) + 'px,' + (Math.random()*4-2) + 'px)';
-          setTimeout(function() {
-            canvas.style.transform = 'translate(0,0)';
-          }, 50);
-          
-          // physics
-          var nx = dx/dist;
-          var ny = dy/dist;
-          
-          // separate balls
-          var overlap = SQ_SIZE - dist;
-          b1.x -= nx * overlap * 0.5;
-          b1.y -= ny * overlap * 0.5;
-          b2.x += nx * overlap * 0.5;
-          b2.y += ny * overlap * 0.5;
-          
-          // velocity stuff
-          var dvx = b2.vx - b1.vx;
-          var dvy = b2.vy - b1.vy;
-          var dot = dvx * nx + dvy * ny;
-          
-          if(dot > 0) return;
-          
-          b1.vx += dot * nx;
-          b1.vy += dot * ny;
-          b2.vx -= dot * nx;
-          b2.vy -= dot * ny;
-          
-          // add chaos
-          b1.vx += (Math.random() - 0.5) * 0.5;
-          b1.vy += (Math.random() - 0.5) * 0.5;
-          b2.vx += (Math.random() - 0.5) * 0.5;
-          b2.vy += (Math.random() - 0.5) * 0.5;
-          
-          // maintain speed
-          var s1 = Math.sqrt(b1.vx*b1.vx + b1.vy*b1.vy);
-          var s2 = Math.sqrt(b2.vx*b2.vx + b2.vy*b2.vy);
-          
-          if(s1 < minSpeed) {
-            b1.vx *= minSpeed/s1;
-            b1.vy *= minSpeed/s1;
-          }
-          if(s2 < minSpeed) {
-            b2.vx *= minSpeed/s2;
-            b2.vy *= minSpeed/s2;
-          }
         }
       }
 
@@ -537,72 +400,59 @@
       }
 
       function addChaos(b) {
-        // wiggle
         b.vx += Math.random() * 0.02 - 0.01;
         b.vy += Math.random() * 0.02 - 0.01;
-
-        // cap speed
         b.vx = Math.min(Math.max(b.vx, -maxSpeed), maxSpeed);
         b.vy = Math.min(Math.max(b.vy, -maxSpeed), maxSpeed);
-
-        // min speed
         if(Math.abs(b.vx) < minSpeed) b.vx = b.vx > 0 ? minSpeed : -minSpeed;
         if(Math.abs(b.vy) < minSpeed) b.vy = b.vy > 0 ? minSpeed : -minSpeed;
       }
 
       function gameLoop() {
-        // motion blur
         ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
         drawGrid();
         updateParticles();
         drawParticles();
-        
         scoreDiv.innerHTML = '<span class="neon">NEON ' + team1pts + '</span> | <span class="shadow">SHADOW ' + team2pts + '</span>';
-        
-        // check collisions
         ballCollision();
         
-        // update balls
         for(var i=0; i<balls.length; i++) {
           var ball = balls[i];
           updateTrail(ball);
           drawBall(ball);
-          checkSquareHit(ball);
           wallBounce(ball);
           ball.x += ball.vx;
           ball.y += ball.vy;
           addChaos(ball);
         }
-        
         frameCounter++;
-        if(frameCounter % 1000 == 0) console.log('still running...', frameCounter);
       }
 
-      // GO!
       setInterval(gameLoop, 1000/60);
     </script>
 
-    <!-- cursor stuff -->
+    <!-- only show custom cursor if NOT embedded -->
     <script>
-      var cursor = document.createElement('div');
-      cursor.className = 'cursor-dot';
-      document.body.appendChild(cursor);
-      
-      document.addEventListener('mousemove', function(e) {
-        cursor.style.left = e.clientX + 'px';
-        cursor.style.top = e.clientY + 'px';
-      });
-      
-      document.addEventListener('mousedown', function() {
-        cursor.style.transform = 'translate(-50%, -50%) scale(0.8)';
-        cursor.style.boxShadow = '0 0 25px rgba(0,255,127,1)';
-        setTimeout(function() {
-          cursor.style.transform = 'translate(-50%, -50%) scale(1)';
-          cursor.style.boxShadow = '0 0 15px rgba(0,255,127,0.6)';
-        }, 150);
-      });
+      if (window.self === window.top) {
+        var cursor = document.createElement('div');
+        cursor.className = 'cursor-dot';
+        document.body.appendChild(cursor);
+        
+        document.addEventListener('mousemove', function(e) {
+          cursor.style.left = e.clientX + 'px';
+          cursor.style.top = e.clientY + 'px';
+        });
+        
+        document.addEventListener('mousedown', function() {
+          cursor.style.transform = 'translate(-50%, -50%) scale(0.8)';
+          cursor.style.boxShadow = '0 0 25px rgba(0,255,127,1)';
+          setTimeout(function() {
+            cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+            cursor.style.boxShadow = '0 0 15px rgba(0,255,127,0.6)';
+          }, 150);
+        });
+      }
     </script>
   </body>
 </html>
