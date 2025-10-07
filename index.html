@@ -433,26 +433,38 @@
     </script>
 
     <!-- only show custom cursor if NOT embedded -->
-    <script>
-      if (window.self === window.top) {
-        var cursor = document.createElement('div');
-        cursor.className = 'cursor-dot';
-        document.body.appendChild(cursor);
-        
-        document.addEventListener('mousemove', function(e) {
-          cursor.style.left = e.clientX + 'px';
-          cursor.style.top = e.clientY + 'px';
-        });
-        
-        document.addEventListener('mousedown', function() {
-          cursor.style.transform = 'translate(-50%, -50%) scale(0.8)';
-          cursor.style.boxShadow = '0 0 25px rgba(0,255,127,1)';
-          setTimeout(function() {
-            cursor.style.transform = 'translate(-50%, -50%) scale(1)';
-            cursor.style.boxShadow = '0 0 15px rgba(0,255,127,0.6)';
-          }, 150);
-        });
-      }
-    </script>
+<!-- only run the custom green cursor when NOT inside an iframe -->
+<script>
+  (function() {
+    // detect if this game is inside an iframe
+    const inIframe = window.self !== window.top;
+
+    // if inside an iframe, do nothing (no cursor)
+    if (inIframe) {
+      console.log("Running inside iframe — green cursor disabled.");
+      return;
+    }
+
+    // otherwise, run the normal cursor script
+    var cursor = document.createElement('div');
+    cursor.className = 'cursor-dot';
+    document.body.appendChild(cursor);
+    
+    document.addEventListener('mousemove', function(e) {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+    });
+    
+    document.addEventListener('mousedown', function() {
+      cursor.style.transform = 'translate(-50%, -50%) scale(0.8)';
+      cursor.style.boxShadow = '0 0 25px rgba(0,255,127,1)';
+      setTimeout(function() {
+        cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+        cursor.style.boxShadow = '0 0 15px rgba(0,255,127,0.6)';
+      }, 150);
+    });
+  })();
+</script>
+
   </body>
 </html>
