@@ -436,20 +436,21 @@
 <!-- only run the custom green cursor when NOT inside an iframe -->
 <script>
   (function() {
-    // detect if this game is inside an iframe
     const inIframe = window.self !== window.top;
 
-    // if inside an iframe, do nothing (no cursor)
-    if (inIframe) {
-      console.log("Running inside iframe — green cursor disabled.");
-      return;
-    }
-
-    // otherwise, run the normal cursor script
+    // always run the game logic, but if embedded, just hide the cursor
     var cursor = document.createElement('div');
     cursor.className = 'cursor-dot';
     document.body.appendChild(cursor);
-    
+
+    if (inIframe) {
+      // hide the green cursor completely
+      cursor.style.display = 'none';
+      console.log("Embedded mode: green cursor hidden");
+      return; // stop here, but rest of page (game loop) keeps running fine
+    }
+
+    // normal cursor logic for standalone mode
     document.addEventListener('mousemove', function(e) {
       cursor.style.left = e.clientX + 'px';
       cursor.style.top = e.clientY + 'px';
