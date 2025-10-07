@@ -24,7 +24,11 @@
         background: linear-gradient(135deg, #0a0a0a 0%, #1a0b2e 50%, #16213e 100%);
         overflow: hidden;
         position: relative;
-        cursor: none; /* fck the default cursor lol */
+      }
+
+      /* hide default cursor everywhere */
+      * {
+        cursor: none !important;
       }
 
       /* scanlines go brrr */
@@ -137,7 +141,7 @@
         100% { transform: translate(0); }
       }
 
-      /* custom cursor bc why not */
+      /* custom neon cursor */
       .cursor-dot {
         position: fixed;
         top: 0;
@@ -151,6 +155,7 @@
         transform: translate(-50%, -50%);
         box-shadow: 0 0 15px rgba(0,255,127,0.6);
         transition: transform 0.08s ease-out, box-shadow 0.2s ease-out;
+        mix-blend-mode: screen; /* makes it glow better */
       }
     </style>
   </head>
