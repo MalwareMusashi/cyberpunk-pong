@@ -26,6 +26,7 @@
         position: relative;
       }
 
+      /* scanlines effect */
       body::before {
         content: '';
         position: absolute;
@@ -68,6 +69,7 @@
           inset 0 0 20px rgba(255, 255, 255, 0.1);
         border: 2px solid rgba(255, 0, 255, 0.3);
         position: relative;
+        transition: transform 0.05s ease-out;
       }
 
       #score {
@@ -158,139 +160,142 @@
       <div id="score"></div>
       <p id="made">
         made by
-        <a href="https://koenvangilst.nl/labs/pong-wars">M4lw4r3Mus4shi</a> | source on
-        <a href="https://github.com/vnglst/pong-wars">github</a>
+        <a href="https://github.com/MalwareMusashi">M4lw4r3Mus4shi</a> | source on
+        <a href="https://github.com/MalwareMusashi/cyberpunk-pong-wars">github</a>
       </p>
     </div>
   </body>
 
   <script>
-    // Cyberpunk color palette
-    const colorPalette = {
-      NeonPink: "#ff00ff",
-      ElectricCyan: "#00ffff",
-      DeepPurple: "#7209b7",
-      DarkVoid: "#0a0a0a",
-      NeonGreen: "#39ff14",
-      HotMagenta: "#ff006e",
-      CyberBlue: "#00d4ff",
-      ShadowPurple: "#2d1b69"
+    // yo this is cyberpunk pong wars
+    // basically took the og pong wars and made it look sick af
+    // neon colors, particle fx, the whole nine yards
+    
+    const colors = {
+      pink: "#ff00ff",
+      cyan: "#00ffff",
+      purple: "#7209b7",
+      black: "#0a0a0a",
+      neonGrn: "#39ff14",
+      hotPink: "#ff006e",
+      blue: "#00d4ff",
+      darkPurp: "#2d1b69"
     };
 
     const canvas = document.getElementById("pongCanvas");
     const ctx = canvas.getContext("2d");
-    const scoreElement = document.getElementById("score");
+    const scoreEl = document.getElementById("score");
+    
+    // game config
+    const TEAM_1_COLOR = colors.darkPurp;
+    const TEAM_1_BALL = colors.cyan;
+    const TEAM_2_COLOR = colors.black;
+    const TEAM_2_BALL = colors.pink;
+    const SQ_SIZE = 25;
+    const MIN_SPD = 5;
+    const MAX_SPD = 10;
+    const TRAIL_LEN = 20;
 
-    // Cyberpunk theme colors
-    const DAY_COLOR = colorPalette.ShadowPurple;
-    const DAY_BALL_COLOR = colorPalette.ElectricCyan;
-    const NIGHT_COLOR = colorPalette.DarkVoid;
-    const NIGHT_BALL_COLOR = colorPalette.NeonPink;
-    const SQUARE_SIZE = 25;
-    const MIN_SPEED = 5;
-    const MAX_SPEED = 10;
-    const TRAIL_LENGTH = 20;
+    const gridWidth = canvas.width / SQ_SIZE;
+    const gridHeight = canvas.height / SQ_SIZE;
 
-    const numSquaresX = canvas.width / SQUARE_SIZE;
-    const numSquaresY = canvas.height / SQUARE_SIZE;
+    let team1Score = 0;
+    let team2Score = 0;
+    let frame = 0;
 
-    let dayScore = 0;
-    let nightScore = 0;
-
-    const squares = [];
-
-    // Trail data structure
-    const trails = {
-      ball1: [],
-      ball2: []
-    };
-
-    // Particle system
+    const grid = [];
+    const trails = { b1: [], b2: [] };
     const particles = [];
-    const MAX_PARTICLES = 200;
+    const MAX_PARTS = 200;
 
+    // particle class for explosions n stuff
     class Particle {
-      constructor(x, y, color, type = 'square') {
+      constructor(x, y, col, isBallHit = false) {
         this.x = x;
         this.y = y;
-        this.color = color;
-        this.type = type;
+        this.col = col;
+        this.isBallHit = isBallHit;
         
-        if (type === 'ball') {
-          // Ball collision particles - explosive burst
-          const angle = Math.random() * Math.PI * 2;
-          const speed = Math.random() * 8 + 4;
-          this.vx = Math.cos(angle) * speed;
-          this.vy = Math.sin(angle) * speed;
+        // randomize movement
+        const ang = Math.random() * Math.PI * 2;
+        
+        if (isBallHit) {
+          // bigger explosion for ball collisions
+          const spd = Math.random() * 8 + 4;
+          this.dx = Math.cos(ang) * spd;
+          this.dy = Math.sin(ang) * spd;
           this.size = Math.random() * 6 + 3;
           this.life = 1;
-          this.decay = 0.015;
-          this.gravity = 0;
-          this.trail = [];
+          this.fade = 0.015;
+          this.grav = 0;
         } else {
-          // Square collision particles - directional spray
-          const angle = Math.random() * Math.PI * 2;
-          const speed = Math.random() * 4 + 2;
-          this.vx = Math.cos(angle) * speed;
-          this.vy = Math.sin(angle) * speed;
+          // smaller for square hits
+          const spd = Math.random() * 4 + 2;
+          this.dx = Math.cos(ang) * spd;
+          this.dy = Math.sin(ang) * spd;
           this.size = Math.random() * 4 + 2;
           this.life = 1;
-          this.decay = 0.02;
-          this.gravity = 0.1;
-          this.trail = [];
+          this.fade = 0.02;
+          this.grav = 0.1;
         }
+        
+        this.trail = [];
       }
 
       update() {
-        // Store trail position
+        // keep track of where we've been for trail effect
         if (this.life > 0.5) {
-          this.trail.push({ x: this.x, y: this.y, life: this.life });
+          this.trail.push({ x: this.x, y: this.y, a: this.life });
           if (this.trail.length > 5) {
             this.trail.shift();
           }
         }
 
-        this.x += this.vx;
-        this.y += this.vy;
-        this.vy += this.gravity;
-        this.vx *= 0.98;
-        this.vy *= 0.98;
-        this.life -= this.decay;
+        this.x += this.dx;
+        this.y += this.dy;
+        this.dy += this.grav;
         
-        // Add sparkle effect for ball collision particles
-        if (this.type === 'ball' && Math.random() < 0.1) {
+        // friction
+        this.dx *= 0.98;
+        this.dy *= 0.98;
+        
+        this.life -= this.fade;
+        
+        // sparkle for ball hits
+        if (this.isBallHit && Math.random() < 0.1) {
           this.size = Math.random() * 6 + 3;
         }
       }
 
-      draw(ctx) {
+      render(ctx) {
         if (this.life <= 0) return;
 
-        // Draw particle trail
-        this.trail.forEach((point, index) => {
-          const trailOpacity = (index / this.trail.length) * this.life * 0.3;
-          ctx.globalAlpha = trailOpacity;
-          ctx.fillStyle = this.color;
-          ctx.fillRect(point.x - 1, point.y - 1, 2, 2);
+        // draw trail
+        this.trail.forEach((pt, idx) => {
+          const alpha = (idx / this.trail.length) * this.life * 0.3;
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = this.col;
+          ctx.fillRect(pt.x - 1, pt.y - 1, 2, 2);
         });
 
-        // Draw main particle with glow
         ctx.globalAlpha = this.life;
         
-        // Outer glow
-        const glowSize = this.size * 2;
-        const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, glowSize);
-        gradient.addColorStop(0, this.color);
-        gradient.addColorStop(0.4, this.color + '80');
-        gradient.addColorStop(1, 'transparent');
+        // glow effect
+        const grad = ctx.createRadialGradient(
+          this.x, this.y, 0,
+          this.x, this.y, this.size * 2
+        );
+        grad.addColorStop(0, this.col);
+        grad.addColorStop(0.4, this.col + '80');
+        grad.addColorStop(1, 'transparent');
         
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, glowSize, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, this.size * 2, 0, Math.PI * 2);
         ctx.fill();
         
-        // Inner bright core
-        ctx.fillStyle = this.type === 'ball' ? '#ffffff' : this.color;
+        // bright core
+        ctx.fillStyle = this.isBallHit ? '#ffffff' : this.col;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size * 0.5, 0, Math.PI * 2);
         ctx.fill();
@@ -299,174 +304,174 @@
       }
     }
 
-    function createParticles(x, y, color, count, type = 'square') {
-      for (let i = 0; i < count; i++) {
-        if (particles.length < MAX_PARTICLES) {
-          particles.push(new Particle(x, y, color, type));
-        }
+    function spawnParticles(x, y, col, num, isBallHit = false) {
+      for (let i = 0; i < num; i++) {
+        if (particles.length >= MAX_PARTS) break;
+        particles.push(new Particle(x, y, col, isBallHit));
       }
     }
 
-    function updateParticles() {
+    function updateParts() {
       for (let i = particles.length - 1; i >= 0; i--) {
-        const particle = particles[i];
-        particle.update();
-        
-        if (particle.life <= 0) {
+        const p = particles[i];
+        p.update();
+        if (p.life <= 0) {
           particles.splice(i, 1);
         }
       }
     }
 
-    function drawParticles(ctx) {
-      particles.forEach(particle => particle.draw(ctx));
+    function renderParts(ctx) {
+      particles.forEach(p => p.render(ctx));
     }
 
-    // Populate the fields, one half day, one half night
-    for (let i = 0; i < numSquaresX; i++) {
-      squares[i] = [];
-      for (let j = 0; j < numSquaresY; j++) {
-        squares[i][j] = i < numSquaresX / 2 ? DAY_COLOR : NIGHT_COLOR;
+    // init grid - half n half
+    for (let i = 0; i < gridWidth; i++) {
+      grid[i] = [];
+      for (let j = 0; j < gridHeight; j++) {
+        grid[i][j] = i < gridWidth / 2 ? TEAM_1_COLOR : TEAM_2_COLOR;
       }
     }
 
+    // ball objects
     const balls = [
       {
         x: canvas.width / 4,
         y: canvas.height / 2,
         dx: 8,
         dy: -8,
-        reverseColor: DAY_COLOR,
-        ballColor: DAY_BALL_COLOR,
-        trailKey: 'ball1',
-        glowColor: colorPalette.ElectricCyan
+        team: TEAM_1_COLOR,
+        color: TEAM_1_BALL,
+        trail: 'b1',
+        glow: colors.cyan
       },
       {
         x: (canvas.width / 4) * 3,
         y: canvas.height / 2,
         dx: -8,
         dy: 8,
-        reverseColor: NIGHT_COLOR,
-        ballColor: NIGHT_BALL_COLOR,
-        trailKey: 'ball2',
-        glowColor: colorPalette.NeonPink
+        team: TEAM_2_COLOR,
+        color: TEAM_2_BALL,
+        trail: 'b2',
+        glow: colors.pink
       },
     ];
 
-    let iteration = 0;
-
-    function updateTrail(ball) {
-      const trail = trails[ball.trailKey];
-      trail.push({ x: ball.x, y: ball.y });
-      if (trail.length > TRAIL_LENGTH) {
-        trail.shift();
+    function addToTrail(ball) {
+      const t = trails[ball.trail];
+      t.push({ x: ball.x, y: ball.y });
+      if (t.length > TRAIL_LEN) {
+        t.shift();
       }
     }
 
-    function drawTrail(ball) {
-      const trail = trails[ball.trailKey];
-      trail.forEach((point, index) => {
-        const opacity = (index / trail.length) * 0.6;
-        const radius = (SQUARE_SIZE / 2) * (index / trail.length) * 0.8;
+    function renderTrail(ball) {
+      const t = trails[ball.trail];
+      t.forEach((pt, idx) => {
+        const alpha = (idx / t.length) * 0.6;
+        const r = (SQ_SIZE / 2) * (idx / t.length) * 0.8;
         
         ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2, false);
+        ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
         
-        // Create gradient for trail
-        const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
-        gradient.addColorStop(0, ball.ballColor + Math.floor(opacity * 255).toString(16).padStart(2, '0'));
-        gradient.addColorStop(1, 'transparent');
+        const grad = ctx.createRadialGradient(
+          pt.x, pt.y, 0,
+          pt.x, pt.y, r
+        );
+        grad.addColorStop(0, ball.color + Math.floor(alpha * 255).toString(16).padStart(2, '0'));
+        grad.addColorStop(1, 'transparent');
         
-        ctx.fillStyle = gradient;
+        ctx.fillStyle = grad;
         ctx.fill();
-        ctx.closePath();
       });
     }
 
-    function drawBall(ball) {
-      // Draw trail first (so it appears behind the ball)
-      drawTrail(ball);
+    function renderBall(ball) {
+      renderTrail(ball);
       
-      // Draw outer glow
+      // outer glow
       ctx.beginPath();
-      ctx.arc(ball.x, ball.y, SQUARE_SIZE / 2 + 5, 0, Math.PI * 2, false);
-      const glowGradient = ctx.createRadialGradient(ball.x, ball.y, 0, ball.x, ball.y, SQUARE_SIZE / 2 + 5);
-      glowGradient.addColorStop(0, ball.glowColor + '40');
-      glowGradient.addColorStop(0.5, ball.glowColor + '20');
-      glowGradient.addColorStop(1, 'transparent');
-      ctx.fillStyle = glowGradient;
-      ctx.fill();
-      ctx.closePath();
-      
-      // Draw main ball
-      ctx.beginPath();
-      ctx.arc(ball.x, ball.y, SQUARE_SIZE / 2, 0, Math.PI * 2, false);
-      
-      // Create gradient for ball
-      const gradient = ctx.createRadialGradient(ball.x - 3, ball.y - 3, 0, ball.x, ball.y, SQUARE_SIZE / 2);
-      gradient.addColorStop(0, ball.ballColor);
-      gradient.addColorStop(0.7, ball.ballColor);
-      gradient.addColorStop(1, ball.glowColor);
-      
-      ctx.fillStyle = gradient;
+      ctx.arc(ball.x, ball.y, SQ_SIZE / 2 + 5, 0, Math.PI * 2);
+      const glow = ctx.createRadialGradient(
+        ball.x, ball.y, 0,
+        ball.x, ball.y, SQ_SIZE / 2 + 5
+      );
+      glow.addColorStop(0, ball.glow + '40');
+      glow.addColorStop(0.5, ball.glow + '20');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
       ctx.fill();
       
-      // Add inner glow
-      ctx.shadowColor = ball.glowColor;
+      // main ball
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, SQ_SIZE / 2, 0, Math.PI * 2);
+      
+      const grad = ctx.createRadialGradient(
+        ball.x - 3, ball.y - 3, 0,
+        ball.x, ball.y, SQ_SIZE / 2
+      );
+      grad.addColorStop(0, ball.color);
+      grad.addColorStop(0.7, ball.color);
+      grad.addColorStop(1, ball.glow);
+      
+      ctx.fillStyle = grad;
+      ctx.fill();
+      
+      // inner glow
+      ctx.shadowColor = ball.glow;
       ctx.shadowBlur = 20;
       ctx.fill();
       ctx.shadowBlur = 0;
-      
-      ctx.closePath();
     }
 
-    function drawSquares() {
-      dayScore = 0;
-      nightScore = 0;
+    function renderGrid() {
+      team1Score = 0;
+      team2Score = 0;
 
-      for (let i = 0; i < numSquaresX; i++) {
-        for (let j = 0; j < numSquaresY; j++) {
-          ctx.fillStyle = squares[i][j];
-          ctx.fillRect(i * SQUARE_SIZE, j * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+      for (let i = 0; i < gridWidth; i++) {
+        for (let j = 0; j < gridHeight; j++) {
+          ctx.fillStyle = grid[i][j];
+          ctx.fillRect(i * SQ_SIZE, j * SQ_SIZE, SQ_SIZE, SQ_SIZE);
           
-          // Add subtle grid lines for cyberpunk effect
-          ctx.strokeStyle = squares[i][j] === DAY_COLOR ? 'rgba(0, 255, 255, 0.1)' : 'rgba(255, 0, 255, 0.1)';
+          // subtle grid lines
+          ctx.strokeStyle = grid[i][j] === TEAM_1_COLOR 
+            ? 'rgba(0, 255, 255, 0.1)' 
+            : 'rgba(255, 0, 255, 0.1)';
           ctx.lineWidth = 0.5;
-          ctx.strokeRect(i * SQUARE_SIZE, j * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
+          ctx.strokeRect(i * SQ_SIZE, j * SQ_SIZE, SQ_SIZE, SQ_SIZE);
 
-          // Update scores
-          if (squares[i][j] === DAY_COLOR) dayScore++;
-          if (squares[i][j] === NIGHT_COLOR) nightScore++;
+          if (grid[i][j] === TEAM_1_COLOR) team1Score++;
+          if (grid[i][j] === TEAM_2_COLOR) team2Score++;
         }
       }
     }
 
-    function checkSquareCollision(ball) {
-      // Check multiple points around the ball's circumference
+    function checkGridHit(ball) {
+      // check collision around ball perimeter
       for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
-        const checkX = ball.x + Math.cos(angle) * (SQUARE_SIZE / 2);
-        const checkY = ball.y + Math.sin(angle) * (SQUARE_SIZE / 2);
+        const checkX = ball.x + Math.cos(angle) * (SQ_SIZE / 2);
+        const checkY = ball.y + Math.sin(angle) * (SQ_SIZE / 2);
 
-        const i = Math.floor(checkX / SQUARE_SIZE);
-        const j = Math.floor(checkY / SQUARE_SIZE);
+        const i = Math.floor(checkX / SQ_SIZE);
+        const j = Math.floor(checkY / SQ_SIZE);
 
-        if (i >= 0 && i < numSquaresX && j >= 0 && j < numSquaresY) {
-          if (squares[i][j] !== ball.reverseColor) {
-            // Square hit! Update square color
-            squares[i][j] = ball.reverseColor;
+        if (i >= 0 && i < gridWidth && j >= 0 && j < gridHeight) {
+          if (grid[i][j] !== ball.team) {
+            // hit! convert square
+            grid[i][j] = ball.team;
 
-            // Create particle explosion at impact point
-            const impactX = i * SQUARE_SIZE + SQUARE_SIZE / 2;
-            const impactY = j * SQUARE_SIZE + SQUARE_SIZE / 2;
-            createParticles(impactX, impactY, ball.glowColor, 8, 'square');
+            // spawn particles at impact
+            const hitX = i * SQ_SIZE + SQ_SIZE / 2;
+            const hitY = j * SQ_SIZE + SQ_SIZE / 2;
+            spawnParticles(hitX, hitY, ball.glow, 8, false);
 
-            // Create impact effect
-            ctx.fillStyle = ball.glowColor;
+            // flash effect
+            ctx.fillStyle = ball.glow;
             ctx.globalAlpha = 0.5;
-            ctx.fillRect(i * SQUARE_SIZE - 2, j * SQUARE_SIZE - 2, SQUARE_SIZE + 4, SQUARE_SIZE + 4);
+            ctx.fillRect(i * SQ_SIZE - 2, j * SQ_SIZE - 2, SQ_SIZE + 4, SQ_SIZE + 4);
             ctx.globalAlpha = 1;
 
-            // Determine bounce direction based on the angle
+            // bounce
             if (Math.abs(Math.cos(angle)) > Math.abs(Math.sin(angle))) {
               ball.dx = -ball.dx;
             } else {
@@ -477,144 +482,149 @@
       }
     }
 
-    function checkBallCollision() {
-      const ball1 = balls[0];
-      const ball2 = balls[1];
+    function checkBallsHit() {
+      const b1 = balls[0];
+      const b2 = balls[1];
       
-      // Calculate distance between ball centers
-      const dx = ball2.x - ball1.x;
-      const dy = ball2.y - ball1.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+      const dx = b2.x - b1.x;
+      const dy = b2.y - b1.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
       
-      // Check if balls are colliding (both have radius of SQUARE_SIZE / 2)
-      const minDistance = SQUARE_SIZE;
+      const minDist = SQ_SIZE;
       
-      if (distance < minDistance) {
-        // Create spectacular particle explosion at collision point
-        const collisionX = (ball1.x + ball2.x) / 2;
-        const collisionY = (ball1.y + ball2.y) / 2;
+      if (dist < minDist) {
+        // BOOM! collision
+        const midX = (b1.x + b2.x) / 2;
+        const midY = (b1.y + b2.y) / 2;
         
-        // Create particles with both ball colors
-        createParticles(collisionX, collisionY, ball1.glowColor, 15, 'ball');
-        createParticles(collisionX, collisionY, ball2.glowColor, 15, 'ball');
+        // epic particle explosion
+        spawnParticles(midX, midY, b1.glow, 15, true);
+        spawnParticles(midX, midY, b2.glow, 15, true);
         
-        // Add screen shake effect for ball collisions
+        // screen shake baby
         canvas.style.transform = `translate(${Math.random() * 4 - 2}px, ${Math.random() * 4 - 2}px)`;
         setTimeout(() => {
           canvas.style.transform = 'translate(0, 0)';
         }, 50);
         
-        // Normalize the collision vector
-        const nx = dx / distance;
-        const ny = dy / distance;
+        // physics stuff
+        const nx = dx / dist;
+        const ny = dy / dist;
         
-        // Separate the balls to prevent overlap
-        const overlap = minDistance - distance;
-        const separationX = nx * overlap * 0.5;
-        const separationY = ny * overlap * 0.5;
+        // push em apart
+        const overlap = minDist - dist;
+        const pushX = nx * overlap * 0.5;
+        const pushY = ny * overlap * 0.5;
         
-        ball1.x -= separationX;
-        ball1.y -= separationY;
-        ball2.x += separationX;
-        ball2.y += separationY;
+        b1.x -= pushX;
+        b1.y -= pushY;
+        b2.x += pushX;
+        b2.y += pushY;
         
-        // Calculate relative velocity
-        const dvx = ball2.dx - ball1.dx;
-        const dvy = ball2.dy - ball1.dy;
+        // velocity exchange
+        const vx = b2.dx - b1.dx;
+        const vy = b2.dy - b1.dy;
+        const dot = vx * nx + vy * ny;
         
-        // Calculate relative velocity in collision normal direction
-        const dvn = dvx * nx + dvy * ny;
+        if (dot > 0) return;
         
-        // Do not resolve if velocities are separating
-        if (dvn > 0) return;
+        const impulse = 2 * dot / 2;
         
-        // Calculate collision impulse
-        const impulse = 2 * dvn / 2; // Divided by sum of masses (both are 1)
+        b1.dx += impulse * nx;
+        b1.dy += impulse * ny;
+        b2.dx -= impulse * nx;
+        b2.dy -= impulse * ny;
         
-        // Update velocities
-        ball1.dx += impulse * nx;
-        ball1.dy += impulse * ny;
-        ball2.dx -= impulse * nx;
-        ball2.dy -= impulse * ny;
+        // add some chaos
+        b1.dx += (Math.random() - 0.5) * 0.5;
+        b1.dy += (Math.random() - 0.5) * 0.5;
+        b2.dx += (Math.random() - 0.5) * 0.5;
+        b2.dy += (Math.random() - 0.5) * 0.5;
         
-        // Add some randomness to prevent perfectly symmetric bounces
-        ball1.dx += (Math.random() - 0.5) * 0.5;
-        ball1.dy += (Math.random() - 0.5) * 0.5;
-        ball2.dx += (Math.random() - 0.5) * 0.5;
-        ball2.dy += (Math.random() - 0.5) * 0.5;
+        // maintain min speed
+        const spd1 = Math.sqrt(b1.dx * b1.dx + b1.dy * b1.dy);
+        const spd2 = Math.sqrt(b2.dx * b2.dx + b2.dy * b2.dy);
         
-        // Ensure minimum speed is maintained
-        const speed1 = Math.sqrt(ball1.dx * ball1.dx + ball1.dy * ball1.dy);
-        const speed2 = Math.sqrt(ball2.dx * ball2.dx + ball2.dy * ball2.dy);
-        
-        if (speed1 < MIN_SPEED) {
-          const factor = MIN_SPEED / speed1;
-          ball1.dx *= factor;
-          ball1.dy *= factor;
+        if (spd1 < MIN_SPD) {
+          const mult = MIN_SPD / spd1;
+          b1.dx *= mult;
+          b1.dy *= mult;
         }
         
-        if (speed2 < MIN_SPEED) {
-          const factor = MIN_SPEED / speed2;
-          ball2.dx *= factor;
-          ball2.dy *= factor;
+        if (spd2 < MIN_SPD) {
+          const mult = MIN_SPD / spd2;
+          b2.dx *= mult;
+          b2.dy *= mult;
         }
       }
     }
 
-    function checkBoundaryCollision(ball) {
-      if (ball.x + ball.dx > canvas.width - SQUARE_SIZE / 2 || ball.x + ball.dx < SQUARE_SIZE / 2) {
+    function wallBounce(ball) {
+      if (ball.x + ball.dx > canvas.width - SQ_SIZE / 2 || 
+          ball.x + ball.dx < SQ_SIZE / 2) {
         ball.dx = -ball.dx;
       }
-      if (ball.y + ball.dy > canvas.height - SQUARE_SIZE / 2 || ball.y + ball.dy < SQUARE_SIZE / 2) {
+      if (ball.y + ball.dy > canvas.height - SQ_SIZE / 2 || 
+          ball.y + ball.dy < SQ_SIZE / 2) {
         ball.dy = -ball.dy;
       }
     }
 
-    function addRandomness(ball) {
+    function addChaos(ball) {
+      // random drift to keep things interesting
       ball.dx += Math.random() * 0.02 - 0.01;
       ball.dy += Math.random() * 0.02 - 0.01;
 
-      // Limit the speed of the ball
-      ball.dx = Math.min(Math.max(ball.dx, -MAX_SPEED), MAX_SPEED);
-      ball.dy = Math.min(Math.max(ball.dy, -MAX_SPEED), MAX_SPEED);
+      // speed limits
+      ball.dx = Math.min(Math.max(ball.dx, -MAX_SPD), MAX_SPD);
+      ball.dy = Math.min(Math.max(ball.dy, -MAX_SPD), MAX_SPD);
 
-      // Make sure the ball always maintains a minimum speed
-      if (Math.abs(ball.dx) < MIN_SPEED) ball.dx = ball.dx > 0 ? MIN_SPEED : -MIN_SPEED;
-      if (Math.abs(ball.dy) < MIN_SPEED) ball.dy = ball.dy > 0 ? MIN_SPEED : -MIN_SPEED;
+      // dont let it get too slow
+      if (Math.abs(ball.dx) < MIN_SPD) {
+        ball.dx = ball.dx > 0 ? MIN_SPD : -MIN_SPD;
+      }
+      if (Math.abs(ball.dy) < MIN_SPD) {
+        ball.dy = ball.dy > 0 ? MIN_SPD : -MIN_SPD;
+      }
     }
 
-    function draw() {
-      // Create slight motion blur effect
+    function gameLoop() {
+      // motion blur effect
       ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      drawSquares();
+      renderGrid();
       
-      // Update and draw particles
-      updateParticles();
-      drawParticles(ctx);
+      // particles go behind balls
+      updateParts();
+      renderParts(ctx);
 
-      scoreElement.innerHTML = `<span class="neon">NEON ${dayScore}</span> | <span class="shadow">SHADOW ${nightScore}</span>`;
+      scoreEl.innerHTML = `<span class="neon">NEON ${team1Score}</span> | <span class="shadow">SHADOW ${team2Score}</span>`;
 
-      // Check for ball-to-ball collision first
-      checkBallCollision();
+      // check ball collision first
+      checkBallsHit();
 
-      balls.forEach((ball) => {
-        updateTrail(ball);
-        drawBall(ball);
-        checkSquareCollision(ball);
-        checkBoundaryCollision(ball);
+      balls.forEach(ball => {
+        addToTrail(ball);
+        renderBall(ball);
+        checkGridHit(ball);
+        wallBounce(ball);
+        
+        // move it
         ball.x += ball.dx;
         ball.y += ball.dy;
 
-        addRandomness(ball);
+        addChaos(ball);
       });
 
-      iteration++;
-      if (iteration % 1_000 === 0) console.log("iteration", iteration);
+      frame++;
+      if (frame % 1000 === 0) {
+        console.log('frame:', frame);
+      }
     }
 
-    const FRAME_RATE = 60;
-    setInterval(draw, 1000 / FRAME_RATE);
+    // lets gooooo
+    const FPS = 60;
+    setInterval(gameLoop, 1000 / FPS);
   </script>
 </html>
