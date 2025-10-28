@@ -166,8 +166,6 @@
     </div>
 
     <script>
-      // pong wars cyberpunk edition
-      // warning: may cause seizures (jk but lots of flashing)
       
       const colors = {
         pink: "#ff00ff",
@@ -485,7 +483,7 @@
           var dvy = b2.vy - b1.vy;
           var dot = dvx * nx + dvy * ny;
           
-          if(dot > 0) return; // already moving apart
+          if(dot > 0) return; 
           
           b1.vx += dot * nx;
           b1.vy += dot * ny;
@@ -515,10 +513,10 @@
 
       function wallBounce(b) {
         if(b.x + b.vx > canvas.width - SQ_SIZE/2 || b.x + b.vx < SQ_SIZE/2) {
-          b.vx = -b.vx; // flip x velocity
+          b.vx = -b.vx; 
         }
         if(b.y + b.vy > canvas.height - SQ_SIZE/2 || b.y + b.vy < SQ_SIZE/2) {
-          b.vy = -b.vy; // flip y velocity
+          b.vy = -b.vy; 
         }
       }
 
@@ -537,7 +535,7 @@
       }
 
       function gameLoop() {
-        // motion blur fx
+        
         ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
